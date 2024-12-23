@@ -1,20 +1,36 @@
 package zank.lib.script_topo_sort;
 
+import lombok.val;
+import zank.lib.script_topo_sort.example.IntSortables;
+import zank.lib.script_topo_sort.topo.TopoSort;
+
 /**
  * @author ZZZank
  */
-//TIP 要<b>运行</b>代码，请按 <shortcut actionId="Run"/> 或
-// 点击装订区域中的 <icon src="AllIcons.Actions.Execute"/> 图标。
 public class Main {
     public static void main(String[] args) {
-        //TIP 当文本光标位于高亮显示的文本处时按 <shortcut actionId="ShowIntentionActions"/>
-        // 查看 IntelliJ IDEA 建议如何修正。
-        System.out.printf("Hello and welcome!");
+        val sortables = new IntSortables()
+            .add()//0
+            .add(0, 3)//1
+            .add(1)//2
+            .add()//3
+            .add(0)//4
+            .add(2, 3, 4)//5
+            .sortables;
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP 按 <shortcut actionId="Debug"/> 开始调试代码。我们已经设置了一个 <icon src="AllIcons.Debugger.Db_set_breakpoint"/> 断点
-            // 但您始终可以通过按 <shortcut actionId="ToggleLineBreakpoint"/> 添加更多断点。
-            System.out.println("i = " + i);
-        }
+        val out = System.out;
+        out.println("data:");
+        out.println(sortables.stream()
+            .map(s -> {
+                val builder = new StringBuilder();
+                s.append(builder, true);
+                builder.append('\n');
+                return builder.toString();
+            })
+            .toList()
+        );
+
+        out.println("Sorted:");
+        out.println(TopoSort.sort(sortables));
     }
 }
