@@ -116,13 +116,15 @@ public final class TopoSort {
     public static <T extends TopoSortable<T>> List<T> sortDense(List<T> input)
         throws TopoException, IllegalArgumentException {
         val size = input.size();
+        // construct object->index map, sorting will only use index for better generalization
         val indexed = indexSortables(input);
 
         val dependencies = new boolean[size][size];
         val dependencyCounts = new int[size];
 
-        for (int index = 0; index < size; index++) {
-            var sortable = input.get(index);
+        for (val e : indexed.entrySet()) {
+            val sortable = e.getKey();
+            val index = e.getValue();
             for (val dependency : sortable.getDependencies()) {
                 val depIndex = indexed.get(dependency);
                 if (depIndex == null) {

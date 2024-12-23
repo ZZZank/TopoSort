@@ -15,6 +15,13 @@ public class TestSortables {
         return this;
     }
 
+    public TestSortables addBatch(int batch, int... dependencies) {
+        for (int i = 0; i < batch; i++) {
+            add(dependencies);
+        }
+        return this;
+    }
+
     public int getCurrentSize() {
         return currentSize;
     }

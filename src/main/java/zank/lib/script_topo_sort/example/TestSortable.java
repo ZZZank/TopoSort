@@ -43,7 +43,7 @@ public class TestSortable implements TopoSortable<TestSortable> {
     }
 
     public void append(StringBuilder builder, boolean includeDependencies) {
-        builder.append("TestSortable{").append("index=").append(index);
+        builder.append("Test{").append(index);
         if (includeDependencies) {
             builder.append(", dependencies=").append(dependencies.stream().map(d -> d.index).toList());
         }
