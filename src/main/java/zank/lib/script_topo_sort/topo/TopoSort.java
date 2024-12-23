@@ -9,69 +9,107 @@ import java.util.*;
  */
 public final class TopoSort {
 
-    public static <T extends TopoSortable<T>> List<T> sort(Collection<T> input) {
+    @SuppressWarnings({"unchecked", "unused"})
+    public static <T extends TopoSortable<T>> List<T> sort(Collection<T> input)
+        throws TopoException, IllegalArgumentException {
         return sort(input instanceof List<?> l ? (List<T>) l : new ArrayList<>(input));
     }
 
-    public static <T extends TopoSortable<T>> List<T> sort(List<T> input) {
-        //indexing
-        val indexes = new HashMap<T, Integer>();
+    private static <T extends TopoSortable<T>> void indexSortableDependencies(
+        Map<T, Integer> indexes,
+        Map<Integer, Set<Integer>> requiredBy,
+        Map<Integer, Set<Integer>> requires
+    ) throws IllegalArgumentException {
+        for (val e : indexes.entrySet()) {
+            val sortable = e.getKey();
+            val index = e.getValue();
+            val dependencies = sortable.getDependencies();
+
+            val dependencyIndexes = new HashSet<Integer>();
+            for (val dependency : dependencies) {
+                val depIndex = indexes.get(dependency);
+                dependencyIndexes.add(depIndex);
+                if (depIndex == null) {
+                    throw new IllegalArgumentException("%s (dependency of %s) not in input".formatted(
+                        dependency,
+                        sortable
+                    ));
+                } else if (depIndex.equals(index)) {
+                    throw new IllegalArgumentException("%s claimed itself as its dependency".formatted(sortable));
+                }
+                requiredBy.computeIfAbsent(depIndex, (k) -> new HashSet<>()).add(index);
+            }
+
+            requires.put(index, dependencyIndexes);
+        }
+    }
+
+    private static <T extends TopoSortable<T>> HashMap<T, Integer> indexSortables(List<T> input)
+        throws IllegalArgumentException {
+        val toIndexes = new HashMap<T, Integer>();
         for (int i = 0, size = input.size(); i < size; i++) {
             val sortable = input.get(i);
-            val old = indexes.put(sortable, i);
+            val old = toIndexes.put(sortable, i);
             if (old != null) {
                 throw new IllegalArgumentException("values in index %s and %s are same values".formatted(i, old));
             }
         }
+        return toIndexes;
+    }
+
+    public static <T extends TopoSortable<T>> List<T> sort(List<T> input) throws TopoException, IllegalArgumentException {
+        //indexing
+        val indexes = indexSortables(input);
+
         //indexing dependencies
         val requiredBy = new HashMap<Integer, Set<Integer>>();
-        val dependencyCounts = new HashMap<Integer, Integer>();
-        for (val sortable : input) {
-            val index = indexes.get(sortable);
-            val dependencies = sortable.getDependencies();
-            for (val dependency : dependencies) {
-                val depIndex = indexes.get(dependency);
-                if (depIndex == null) {
-                    throw new IllegalArgumentException("%s (dependency of %s) not in input".formatted(dependency, sortable));
-                } else if (depIndex.equals(index)) {
-                    throw new IllegalArgumentException("%s claimed itself as its dependency".formatted(sortable));
-                }
-                requiredBy.computeIfAbsent(depIndex, (k) -> new HashSet<>())
-                    .add(index);
+        val requires = new HashMap<Integer, Set<Integer>>();
+        indexSortableDependencies(indexes, requiredBy, requires);
+
+        var avaliables = new ArrayList<Integer>();
+        for (val e : indexes.entrySet()) {
+            val dependencyCount = e.getKey().getDependencies().size();
+            val index = e.getValue();
+            if (dependencyCount == 0) {
+                avaliables.add(index);
             }
-            dependencyCounts.put(index, dependencies.size());
         }
+
         //sort
         val sorted = new ArrayList<T>();
-        var sortableIndexes = dependencyCounts.entrySet()
-            .stream()
-            .filter(e -> e.getValue() == 0)
-            .map(Map.Entry::getKey)
-            .toList();
-        while (!sortableIndexes.isEmpty()) {
+        while (!avaliables.isEmpty()) {
             val newlyFree = new ArrayList<Integer>();
-            for (val free : sortableIndexes) {
+
+            for (val free : avaliables) {
                 sorted.add(input.get(free));
-                val depends = requiredBy.getOrDefault(free, Collections.emptySet());
-                for (val depend : depends) {
-                    val modified = dependencyCounts.get(depend) - 1;
-                    dependencyCounts.put(depend, modified);
-                    if (modified < 0) {
-                        throw new IllegalStateException("what");
-                    }
-                    if (modified == 0) {
-                        newlyFree.add(depend);
+                val dependents = requiredBy.getOrDefault(free, Collections.emptySet());
+                for (val dependent : dependents) {
+                    val require = requires.get(dependent);
+                    require.remove(free);
+                    if (require.isEmpty()) {
+                        newlyFree.add(dependent);
                     }
                 }
             }
-            sortableIndexes = newlyFree;
+
+            avaliables = newlyFree;
         }
-        for (val e : dependencyCounts.entrySet()) {
-            val depCount = e.getValue();
-            if (depCount != 0) {
-                throw new IllegalStateException("there are un-solved inputs for: " + input.get(e.getKey()));
+        validateResult(requires, input);
+        return sorted;
+    }
+
+    private static <T extends TopoSortable<T>> void validateResult(
+        Map<Integer, Set<Integer>> requires,
+        List<T> input
+    ) throws TopoException {
+        for (val require : requires.values()) {
+            if (!require.isEmpty()) {
+                val unsolved = requires.entrySet()
+                    .stream()
+                    .filter(e -> !e.getValue().isEmpty())
+                    .toList();
+                throw new TopoException(unsolved, input);
             }
         }
-        return sorted;
     }
 }
