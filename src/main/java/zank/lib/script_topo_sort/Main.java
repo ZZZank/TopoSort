@@ -1,7 +1,7 @@
 package zank.lib.script_topo_sort;
 
 import lombok.val;
-import zank.lib.script_topo_sort.example.IntSortables;
+import zank.lib.script_topo_sort.example.TestSortables;
 import zank.lib.script_topo_sort.topo.TopoSort;
 
 /**
@@ -9,7 +9,7 @@ import zank.lib.script_topo_sort.topo.TopoSort;
  */
 public class Main {
     public static void main(String[] args) {
-        val sortables = new IntSortables()
+        val sortables = new TestSortables()
             .add()//0
             .add(0, 3)//1
             .add(1)//2

@@ -6,12 +6,12 @@ import java.util.List;
 /**
  * @author ZZZank
  */
-public class IntSortables {
-    public final List<IntSortable> sortables = new ArrayList<>();
+public class TestSortables {
+    public final List<TestSortable> sortables = new ArrayList<>();
     private int currentSize = 0;
 
-    public IntSortables add(int... dependencies) {
-        this.sortables.add(new IntSortable(currentSize++, dependencies));
+    public TestSortables add(int... dependencies) {
+        this.sortables.add(new TestSortable(currentSize++, dependencies));
         return this;
     }
 

@@ -11,23 +11,23 @@ import java.util.Objects;
 /**
  * @author ZZZank
  */
-public class IntSortable implements TopoSortable<IntSortable> {
+public class TestSortable implements TopoSortable<TestSortable> {
     public final int index;
-    public final List<IntSortable> dependencies;
+    public final List<TestSortable> dependencies;
 
-    public IntSortable(int index, int... dependencies) {
+    public TestSortable(int index, int... dependencies) {
         this.index = index;
-        this.dependencies = Arrays.stream(dependencies).mapToObj(IntSortable::new).toList();
+        this.dependencies = Arrays.stream(dependencies).mapToObj(TestSortable::new).toList();
     }
 
     @Override
-    public Collection<IntSortable> getDependencies() {
+    public Collection<TestSortable> getDependencies() {
         return dependencies;
     }
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof IntSortable that && index == that.index;
+        return o instanceof TestSortable that && index == that.index;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class IntSortable implements TopoSortable<IntSortable> {
     }
 
     public void append(StringBuilder builder, boolean includeDependencies) {
-        builder.append("IntSortable{").append("index=").append(index);
+        builder.append("TestSortable{").append("index=").append(index);
         if (includeDependencies) {
             builder.append(", dependencies=").append(dependencies.stream().map(d -> d.index).toList());
         }
