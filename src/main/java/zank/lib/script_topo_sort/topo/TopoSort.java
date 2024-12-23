@@ -33,6 +33,8 @@ public final class TopoSort {
                 val depIndex = indexes.get(dependency);
                 if (depIndex == null) {
                     throw new IllegalArgumentException("%s (dependency of %s) not in input".formatted(dependency, sortable));
+                } else if (depIndex.equals(index)) {
+                    throw new IllegalArgumentException("%s claimed itself as its dependency".formatted(sortable));
                 }
                 requiredBy.computeIfAbsent(depIndex, (k) -> new HashSet<>())
                     .add(index);
@@ -41,15 +43,16 @@ public final class TopoSort {
         }
         //sort
         val sorted = new ArrayList<T>();
-        var sortableIndexes = indexes.values()
+        var sortableIndexes = dependencyCounts.entrySet()
             .stream()
-            .filter(i -> !requiredBy.containsKey(i))
+            .filter(e -> e.getValue() == 0)
+            .map(Map.Entry::getKey)
             .toList();
         while (!sortableIndexes.isEmpty()) {
             val newlyFree = new ArrayList<Integer>();
             for (val free : sortableIndexes) {
                 sorted.add(input.get(free));
-                val depends = requiredBy.get(free);
+                val depends = requiredBy.getOrDefault(free, Collections.emptySet());
                 for (val depend : depends) {
                     val modified = dependencyCounts.get(depend) - 1;
                     dependencyCounts.put(depend, modified);
@@ -63,9 +66,10 @@ public final class TopoSort {
             }
             sortableIndexes = newlyFree;
         }
-        for (val depCount : dependencyCounts.values()) {
+        for (val e : dependencyCounts.entrySet()) {
+            val depCount = e.getValue();
             if (depCount != 0) {
-                throw new IllegalStateException("there are un-solved inputs");
+                throw new IllegalStateException("there are un-solved inputs for: " + input.get(e.getKey()));
             }
         }
         return sorted;
