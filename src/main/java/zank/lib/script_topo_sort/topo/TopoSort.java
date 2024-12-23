@@ -112,4 +112,65 @@ public final class TopoSort {
             }
         }
     }
+
+    public static <T extends TopoSortable<T>> List<T> sortDense(List<T> input)
+        throws TopoException, IllegalArgumentException {
+        val size = input.size();
+        val indexed = indexSortables(input);
+
+        val dependencies = new boolean[size][size];
+        val dependencyCounts = new int[size];
+
+        for (int index = 0; index < size; index++) {
+            var sortable = input.get(index);
+            for (val dependency : sortable.getDependencies()) {
+                val depIndex = indexed.get(dependency);
+                if (depIndex == null) {
+                    throw new IllegalArgumentException(String.format(
+                        "%s (dependency of %s) not in input",
+                        dependency,
+                        sortable
+                    ));
+                } else if (depIndex.equals(index)) {
+                    throw new IllegalArgumentException("%s claimed itself as its dependency".formatted(sortable));
+                }
+                dependencies[index][depIndex] = true;
+            }
+            dependencyCounts[index] = sortable.getDependencies().size();
+        }
+
+        var avaliables = new ArrayList<Integer>();
+        for (int i = 0; i < size; i++) {
+            if (dependencyCounts[i] == 0) {
+                avaliables.add(i);
+            }
+        }
+
+        val sorted = new ArrayList<T>();
+        while (!avaliables.isEmpty()) {
+            val newlyFree = new ArrayList<Integer>();
+
+            for (val free : avaliables) {
+                sorted.add(input.get(free));
+                for (int i = 0; i < size; i++) {
+                    if (dependencies[i][free]) {
+                        dependencies[i][free] = false;
+                        val newCount = --dependencyCounts[i];
+                        if (newCount == 0) {
+                            newlyFree.add(i);
+                        }
+                    }
+                }
+            }
+
+            avaliables = newlyFree;
+        }
+
+        for (int dependencyCount : dependencyCounts) {
+            if (dependencyCount != 0) {
+                throw new TopoException(new ArrayList<>(), new ArrayList<>());
+            }
+        }
+        return sorted;
+    }
 }
