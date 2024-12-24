@@ -11,12 +11,12 @@ import java.util.stream.Collectors;
 /**
  * @author ZZZank
  */
-public class TopoException extends Exception {
+public class TopoNotSolved extends RuntimeException {
 
     public final List<Map.Entry<Integer, Set<Integer>>> unsolved;
     private final List<? extends TopoSortable<?>> sortables;
 
-    public TopoException(
+    public TopoNotSolved(
         List<Map.Entry<Integer, Set<Integer>>> unsolved,
         List<? extends TopoSortable<?>> sortables
     ) {

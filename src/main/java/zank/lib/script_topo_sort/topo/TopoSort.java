@@ -11,7 +11,7 @@ public final class TopoSort {
 
     @SuppressWarnings({"unchecked", "unused"})
     public static <T extends TopoSortable<T>> List<T> sort(Collection<T> input)
-        throws TopoException, IllegalArgumentException {
+        throws TopoNotSolved, TopoPreconditionFailed {
         return sort(input instanceof List<?> l ? (List<T>) l : new ArrayList<>(input));
     }
 
@@ -19,7 +19,7 @@ public final class TopoSort {
         Map<T, Integer> indexes,
         Map<Integer, Set<Integer>> requiredBy,
         Map<Integer, Set<Integer>> requires
-    ) throws IllegalArgumentException {
+    ) throws TopoPreconditionFailed {
         for (val e : indexes.entrySet()) {
             val sortable = e.getKey();
             val index = e.getValue();
@@ -30,12 +30,12 @@ public final class TopoSort {
                 val depIndex = indexes.get(dependency);
                 dependencyIndexes.add(depIndex);
                 if (depIndex == null) {
-                    throw new IllegalArgumentException("%s (dependency of %s) not in input".formatted(
+                    throw new TopoPreconditionFailed("%s (dependency of %s) not in input".formatted(
                         dependency,
                         sortable
                     ));
                 } else if (depIndex.equals(index)) {
-                    throw new IllegalArgumentException("%s claimed itself as its dependency".formatted(sortable));
+                    throw new TopoPreconditionFailed("%s claimed itself as its dependency".formatted(sortable));
                 }
                 requiredBy.computeIfAbsent(depIndex, (k) -> new HashSet<>()).add(index);
             }
@@ -45,20 +45,21 @@ public final class TopoSort {
     }
 
     private static <T extends TopoSortable<T>> HashMap<T, Integer> indexSortables(List<T> input)
-        throws IllegalArgumentException {
+        throws TopoPreconditionFailed {
         val toIndexes = new HashMap<T, Integer>();
         for (int i = 0, size = input.size(); i < size; i++) {
             val sortable = input.get(i);
             val old = toIndexes.put(sortable, i);
             if (old != null) {
-                throw new IllegalArgumentException("values in index %s and %s are same values".formatted(i, old));
+                throw new TopoPreconditionFailed("values in index %s and %s are same values".formatted(i, old));
             }
         }
         return toIndexes;
     }
 
-    public static <T extends TopoSortable<T>> List<T> sort(List<T> input) throws TopoException, IllegalArgumentException {
-        //indexing
+    public static <T extends TopoSortable<T>> List<T> sort(List<T> input)
+        throws TopoNotSolved, TopoPreconditionFailed {
+        //construct object->index map, sorting will only use index for better generalization
         val indexes = indexSortables(input);
 
         //indexing dependencies
@@ -101,20 +102,20 @@ public final class TopoSort {
     private static <T extends TopoSortable<T>> void validateResult(
         Map<Integer, Set<Integer>> requires,
         List<T> input
-    ) throws TopoException {
+    ) throws TopoNotSolved {
         for (val require : requires.values()) {
             if (!require.isEmpty()) {
                 val unsolved = requires.entrySet()
                     .stream()
                     .filter(e -> !e.getValue().isEmpty())
                     .toList();
-                throw new TopoException(unsolved, input);
+                throw new TopoNotSolved(unsolved, input);
             }
         }
     }
 
     public static <T extends TopoSortable<T>> List<T> sortDense(List<T> input)
-        throws TopoException, IllegalArgumentException {
+        throws TopoNotSolved, TopoPreconditionFailed {
         val size = input.size();
         // construct object->index map, sorting will only use index for better generalization
         val indexed = indexSortables(input);
@@ -128,13 +129,13 @@ public final class TopoSort {
             for (val dependency : sortable.getDependencies()) {
                 val depIndex = indexed.get(dependency);
                 if (depIndex == null) {
-                    throw new IllegalArgumentException(String.format(
+                    throw new TopoPreconditionFailed(
                         "%s (dependency of %s) not in input",
                         dependency,
                         sortable
-                    ));
+                    );
                 } else if (depIndex.equals(index)) {
-                    throw new IllegalArgumentException("%s claimed itself as its dependency".formatted(sortable));
+                    throw new TopoPreconditionFailed("%s claimed itself as its dependency", sortable);
                 }
                 dependencies[index][depIndex] = true;
             }
@@ -170,7 +171,7 @@ public final class TopoSort {
 
         for (int dependencyCount : dependencyCounts) {
             if (dependencyCount != 0) {
-                throw new TopoException(new ArrayList<>(), new ArrayList<>());
+                throw new TopoNotSolved(new ArrayList<>(), new ArrayList<>());
             }
         }
         return sorted;

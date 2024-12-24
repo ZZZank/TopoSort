@@ -2,8 +2,9 @@ package zank.lib.script_topo_sort;
 
 import lombok.val;
 import zank.lib.script_topo_sort.example.TestSortables;
+import zank.lib.script_topo_sort.topo.TopoPreconditionFailed;
 import zank.lib.script_topo_sort.topo.TopoSort;
-import zank.lib.script_topo_sort.topo.TopoException;
+import zank.lib.script_topo_sort.topo.TopoNotSolved;
 
 /**
  * @author ZZZank
@@ -72,9 +73,12 @@ public class Main {
             val sorted = TopoSort.sortDense(sortables);
             out.println("Sorted:");
             out.println(sorted);
-        } catch (TopoException e) {
-            out.println("Error happened:");
+        } catch (TopoNotSolved e) {
+            out.println("Problem not solved:");
             out.println(e.getFullMessage());
+        } catch (TopoPreconditionFailed e) {
+            out.println("pre-condition failed");
+            out.println(e.getMessage());
         }
     }
 }
