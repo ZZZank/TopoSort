@@ -2,10 +2,7 @@ package zank.lib.script_topo_sort.topo;
 
 import lombok.val;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -13,11 +10,11 @@ import java.util.stream.Collectors;
  */
 public class TopoNotSolved extends RuntimeException {
 
-    public final List<Map.Entry<Integer, Set<Integer>>> unsolved;
+    public final Collection<Map.Entry<Integer, Set<Integer>>> unsolved;
     private final List<? extends TopoSortable<?>> sortables;
 
     public TopoNotSolved(
-        List<Map.Entry<Integer, Set<Integer>>> unsolved,
+        Collection<Map.Entry<Integer, Set<Integer>>> unsolved,
         List<? extends TopoSortable<?>> sortables
     ) {
         this.unsolved = unsolved;

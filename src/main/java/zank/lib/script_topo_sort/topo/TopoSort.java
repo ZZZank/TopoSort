@@ -155,9 +155,26 @@ public final class TopoSort {
 
         for (int dependencyCount : dependencyCounts) {
             if (dependencyCount != 0) {
-                throw new TopoNotSolved(new ArrayList<>(), new ArrayList<>());
+                throw denseNotSolved(dependencies, input);
             }
         }
         return sorted;
+    }
+
+    private static TopoNotSolved denseNotSolved(
+        boolean[][] dependencies,
+        List<? extends TopoSortable<?>> input
+    ) {
+        val notSolved = new HashMap<Integer, Set<Integer>>();
+        val size = dependencies.length;
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                if (dependencies[row][col]) {
+                    notSolved.computeIfAbsent(row, k -> new TreeSet<>())
+                        .add(col);
+                }
+            }
+        }
+        return new TopoNotSolved(notSolved.entrySet(), input);
     }
 }
