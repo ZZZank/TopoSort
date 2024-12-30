@@ -34,13 +34,13 @@ public final class TopoSort {
         val indexes = indexSortables(input);
 
         //indexing dependencies
-        val requiredBy = new HashMap<Integer, Set<Integer>>();
-        val requires = new HashMap<Integer, Set<Integer>>();
+        val requiredBy = new TreeMap<Integer, Set<Integer>>();
+        val requires = new TreeMap<Integer, Set<Integer>>();
         for (val e : indexes.entrySet()) {
             val sortable = e.getKey();
             val index = e.getValue();
 
-            val dependencyIndexes = new HashSet<Integer>();
+            val dependencyIndexes = new TreeSet<Integer>();
             for (T dependency : sortable.getDependencies()) {
                 val depIndex = indexes.get(dependency);
                 if (depIndex == null) {
@@ -49,7 +49,7 @@ public final class TopoSort {
                     throw new TopoPreconditionFailed("%s claimed itself as its dependency", sortable);
                 }
                 dependencyIndexes.add(depIndex);
-                requiredBy.computeIfAbsent(depIndex, (k) -> new HashSet<>()).add(index);
+                requiredBy.computeIfAbsent(depIndex, (k) -> new TreeSet<>()).add(index);
             }
 
             requires.put(index, dependencyIndexes);
@@ -117,11 +117,7 @@ public final class TopoSort {
             for (val dependency : sortable.getDependencies()) {
                 val depIndex = indexed.get(dependency);
                 if (depIndex == null) {
-                    throw new TopoPreconditionFailed(
-                        "%s (dependency of %s) not in input",
-                        dependency,
-                        sortable
-                    );
+                    throw new TopoPreconditionFailed("%s (dependency of %s) not in input", dependency, sortable);
                 } else if (depIndex.equals(index)) {
                     throw new TopoPreconditionFailed("%s claimed itself as its dependency", sortable);
                 }
