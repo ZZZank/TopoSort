@@ -15,43 +15,14 @@ public final class TopoSort {
         return sort(input instanceof List<?> l ? (List<T>) l : new ArrayList<>(input));
     }
 
-    private static <T extends TopoSortable<T>> void indexSortableDependencies(
-        Map<T, Integer> indexes,
-        Map<Integer, Set<Integer>> requiredBy,
-        Map<Integer, Set<Integer>> requires
-    ) throws TopoPreconditionFailed {
-        for (val e : indexes.entrySet()) {
-            val sortable = e.getKey();
-            val index = e.getValue();
-            val dependencies = sortable.getDependencies();
-
-            val dependencyIndexes = new HashSet<Integer>();
-            for (val dependency : dependencies) {
-                val depIndex = indexes.get(dependency);
-                dependencyIndexes.add(depIndex);
-                if (depIndex == null) {
-                    throw new TopoPreconditionFailed("%s (dependency of %s) not in input".formatted(
-                        dependency,
-                        sortable
-                    ));
-                } else if (depIndex.equals(index)) {
-                    throw new TopoPreconditionFailed("%s claimed itself as its dependency".formatted(sortable));
-                }
-                requiredBy.computeIfAbsent(depIndex, (k) -> new HashSet<>()).add(index);
-            }
-
-            requires.put(index, dependencyIndexes);
-        }
-    }
-
-    private static <T extends TopoSortable<T>> HashMap<T, Integer> indexSortables(List<T> input)
+    private static <T extends TopoSortable<T>> HashMap<T, Integer> indexSortables(Collection<T> input)
         throws TopoPreconditionFailed {
         val toIndexes = new HashMap<T, Integer>();
-        for (int i = 0, size = input.size(); i < size; i++) {
-            val sortable = input.get(i);
-            val old = toIndexes.put(sortable, i);
+        var i = 0;
+        for (val sortable : input) {
+            val old = toIndexes.put(sortable, i++);
             if (old != null) {
-                throw new TopoPreconditionFailed("values in index %s and %s are same values".formatted(i, old));
+                throw new TopoPreconditionFailed("values in index %s and %s are same values", i, old);
             }
         }
         return toIndexes;
@@ -65,7 +36,24 @@ public final class TopoSort {
         //indexing dependencies
         val requiredBy = new HashMap<Integer, Set<Integer>>();
         val requires = new HashMap<Integer, Set<Integer>>();
-        indexSortableDependencies(indexes, requiredBy, requires);
+        for (val e : indexes.entrySet()) {
+            val sortable = e.getKey();
+            val index = e.getValue();
+
+            val dependencyIndexes = new HashSet<Integer>();
+            for (T dependency : sortable.getDependencies()) {
+                val depIndex = indexes.get(dependency);
+                if (depIndex == null) {
+                    throw new TopoPreconditionFailed("%s (dependency of %s) not in input", dependency, sortable);
+                } else if (depIndex.equals(index)) {
+                    throw new TopoPreconditionFailed("%s claimed itself as its dependency", sortable);
+                }
+                dependencyIndexes.add(depIndex);
+                requiredBy.computeIfAbsent(depIndex, (k) -> new HashSet<>()).add(index);
+            }
+
+            requires.put(index, dependencyIndexes);
+        }
 
         var avaliables = new ArrayList<Integer>();
         for (val e : indexes.entrySet()) {
